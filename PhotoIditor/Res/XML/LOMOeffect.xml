@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<Data>
+  <Effect name="LOMO" code="ui.LOMO01" className="ui.LOMO01" picType="effect" effectString="overlay" isBlack="0"/>
+  <Effect name="JAPANSTYLE" code="ui.LOMO02" className="ui.LOMO02" picType="effect" effectString="overlay" isBlack="0"/>
+  <Effect name="反色" code="ui.LOMO03" className="ui.LOMO03" picType="effect" effectString="invert" isBlack="0"/>
+  <Effect name="彩色" code="ui.LOMO04" className="ui.LOMO04" picType="effect" effectString="lighten" isBlack="0"/>
+  <Effect name="复古" code="ui.LOMO05" className="ui.LOMO05" picType="effect" effectString="hardlight" isBlack="0"/>
+  <Effect name="炫彩" code="ui.LOMO06" className="ui.LOMO06" picType="effect" effectString="overlay" isBlack="0"/>
+  <Effect name="爱心" code="ui.Festival01" className="ui.Festival01" picType="effect" effectString="lighten" isBlack="0"/>
+  <Effect name="雨天" code="ui.Festival02" className="ui.Festival02" picType="effect" effectString="screen" isBlack="0"/>
+  <Effect name="彩色素描" code="ui.Art01" className="ui.Art01" picType="effect" effectString="screen" isBlack="0"/>
+  <Effect name="黑白素描" code="ui.Art02" className="ui.Art02" picType="effect" effectString="screen" isBlack="1"/>
+  <Effect name="浮雕" code="ui.Art03" className="ui.Art03" picType="effect" effectString="screen" isBlack="1"/>
+</Data>

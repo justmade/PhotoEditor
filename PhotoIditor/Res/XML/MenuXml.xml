@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Data>
+	<MenuList label="文件">
+		<MenuList label="开打"/>
+		<MenuList label="保存"/>
+		<MenuList label="上传图片"/>
+		<MenuList label="退出"/>
+		<MenuList label="截图"/>
+	</MenuList>
+	<MenuList label="About"></MenuList>
+	</Data>

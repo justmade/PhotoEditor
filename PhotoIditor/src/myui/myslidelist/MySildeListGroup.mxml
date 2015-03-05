@@ -1,0 +1,842 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="2000" height="500" creationComplete="init(event)">
+	<fx:Script>
+		<![CDATA[
+			import com.greensock.TweenMax;
+			import com.greensock.easing.Strong;
+			
+			import core.JPGEncoder;
+			import core.mainmap.ViewMapBox;
+			import core.operations.OperationsManager;
+			
+			import datamodule.BorderVo;
+			import datamodule.ChooseMapVo;
+			import datamodule.LomoEffectVo;
+			import datamodule.ThumbVo;
+			import datamodule.ViewMapVo;
+			
+			import loadmodule.ProgressLoading;
+			
+			import managermodule.AddLomoEffect;
+			import managermodule.BorderManager;
+			import managermodule.LomoEffectManager;
+			import managermodule.MySwfManager;
+			import managermodule.SizeRotationManager;
+			import managermodule.ThumbManager;
+			import managermodule.ViewMapManager;
+			
+			import mx.events.FlexEvent;
+			import mx.graphics.codec.JPEGEncoder;
+			
+			import myui.event.ChoosePictureEvent;
+			import myui.event.MySlideEvent;
+			import myui.event.PicOptionEvent;
+			
+			import spark.components.Scroller;
+			import spark.components.VGroup;
+			
+			import ui.CameraEye;
+			import ui.IphoneSkin;
+			import ui.LoadTest;
+			import ui.PicOptions;
+			import ui.btnRedo;
+			import ui.btnRevoke;
+			
+			private var singleArr:Array ; 
+			
+			private var sPane:Scroller ;
+			
+			private var viewMapArr:Array ;
+			
+			private var canvasArea:Sprite ;
+			
+			private var canvasSPane:Scroller;
+	
+			private var vGroup:VGroup;
+			
+			private var tempMiniSp:Sprite ;
+			 
+			private var tempMiniBmp:Bitmap ;
+			//存放选择的地图元件
+			private var chooseMapMc:MovieClip;
+			//判断能否选择图片
+			private var canChooseMc:Boolean = true; 
+			//存放底图的数组
+			private var saveMapArr:Array;
+			//存放底图vo
+			public var mapVoArr:Array;
+			//图片图层管理
+			private var picutreOption:PictureOptions ;
+			//当前图片
+			private var currentPic:*;
+			
+			private var allPictureSp:Sprite ;
+			//照片区
+			private var pictureArea:Sprite ; 
+			//背景区
+			private var borderArea:Sprite ; 
+			//装饰区
+			private var decorationArea:Sprite ; 
+			
+			private var iphoneSkin:IphoneSkin ;
+			
+			private var iphoneMask:IphoneSkin ;
+			
+			private var cameraEye:CameraEye ;
+			
+			private var backGroudPic:* ; 
+			//当前选择的图片类型
+			private var currentPicType:String ;
+			//当前选择的图片code
+			private var currentPicCode:String ;
+			//当前选择的图片名字
+			private var currentPicName:String ;
+			//图片拖动时缩放比例
+			private var moveScale:Number
+			
+			private var singleList:ListSingle 
+			
+			private var arr:Array
+				
+			private var mapOriginalPoint:Point;
+			
+			private var picInitialScale:Number;
+			
+			private var picMiniScaleNum:int 
+			
+			private var btn_Revoke:btnRevoke ;
+			
+			private var btn_Redo:btnRedo ; 
+			
+			
+			private var currentBorderVo:BorderVo =   new BorderVo(); 
+			
+			private var cloneBgBmp:Bitmap;
+			
+			private var originalBgBmd:BitmapData ; 
+			
+			protected function init(event:FlexEvent):void
+			{
+				initCanvas();
+				initUi()
+				saveMapArr = new Array();
+				mapVoArr = new Array();
+				arr =new Array(); 
+				picutreOption = new PictureOptions();
+				viewMapArr = ViewMapManager.getInstance().viewMapNameArr ; 
+				for(var i:int = 0 ; i < viewMapArr.length ; i++){
+					var vo:ViewMapVo = ViewMapManager.getInstance().getViewMapByCode(viewMapArr[i]);
+					var mapSp:ViewMapBox = MySwfManager.getInstance().getMcImg("viewmap",vo);
+//					var mc:MovieClip = new mapClass();
+					arr.push(mapSp);
+					moveScale = mapSp.scaleX = mapSp.scaleY = 150/mapSp.width ;
+					mapSp.addEventListener(MouseEvent.MOUSE_DOWN , onMapMouseDown);
+				}
+				SizeRotationManager.getInstance().setStage(stage);
+				SizeRotationManager.getInstance().addEventListener(MySlideEvent.CHANGE_OPTION_POS , onChangeOptionPos);
+				SizeRotationManager.getInstance().addEventListener(MySlideEvent.FINISH_SCALE , onFinishScale);
+				OperationsManager.getInstance().addEventListener(ChoosePictureEvent.DELETE_PICTURE , onDeletePic);
+				OperationsManager.getInstance().addEventListener(ChoosePictureEvent.GET_DELETE_PICTURE , onGetDeletePic)
+				
+				var thumbArr:Array = ThumbManager.getInstance().thumbNameArr  ;
+				var arr2:Array = new Array();
+				for(i = 0 ; i < thumbArr.length ; i++){
+					var tvo:ThumbVo = ThumbManager.getInstance().getViewMapByCode(thumbArr[i]);
+					var tsp:ViewMapBox = MySwfManager.getInstance().getMcImg("thumb" , tvo);
+					arr2.push(tsp);
+					moveScale = tsp.scaleX =tsp.scaleY= 150 / tsp.width ;
+					tsp.addEventListener(MouseEvent.MOUSE_DOWN , onMapMouseDown);
+				}
+				singleArr = new Array();
+				singleList = new ListSingle();
+				singleList.mcArr = arr ;
+				singleList.init();
+				singleList.displayState = true;
+				singleArr.push(singleList);
+				mySilde.addChild(singleList);
+				
+				var singleList2:ListSingle = new ListSingle();
+				singleList2.mcArr = arr2;
+				singleList2.init();
+				singleList2.displayState = true;
+				mySilde.addChild(singleList2);
+				singleList2.y = singleList2.height
+				singleArr.push(singleList2);
+				
+				var arr3:Array = new Array();
+				var borderArr:Array = BorderManager.getInstance().borderbNameArr  ;
+				for(i = 0 ; i<borderArr.length ; i++){
+					var bvo:BorderVo = BorderManager.getInstance().getBorderByCode(borderArr[i]);
+					var bsp:ViewMapBox = MySwfManager.getInstance().getMcImg("borderres" , bvo);
+					arr3.push(bsp);
+					moveScale = bsp.scaleX =bsp.scaleY= 150 / bsp.width ;
+					bsp.addEventListener(MouseEvent.CLICK , onChooseBorder);
+				}
+				var singleList3:ListSingle = new ListSingle();
+				singleList3.mcArr = arr3;
+				singleList3.init();
+				singleList3.displayState = true;
+				singleList3.y = 2*singleList3.height
+				mySilde.addChild(singleList3);
+				singleArr.push(singleList3);
+				
+				
+				var arr4:Array = new Array();
+				var effectArr:Array = LomoEffectManager.getInstance().effectNameArr ; 
+				for(i = 0 ; i<effectArr.length ; i++){
+					var lvo:LomoEffectVo = LomoEffectManager.getInstance().getLomoEffectByCode(effectArr[i])
+					var lsp:ViewMapBox = MySwfManager.getInstance().getMcImg("LOMOeffect" , lvo);
+					arr4.push(lsp);
+					lsp.scaleX =lsp.scaleY= 150 / lsp.width ;
+					lsp.addEventListener(MouseEvent.CLICK , onGetEffect);
+				}
+				var singleList4:ListSingle = new ListSingle();
+				singleList4.mcArr = arr4;
+				singleList4.init();
+				singleList4.displayState = true;
+				singleList4.y = 2*singleList4.height
+				mySilde.addChild(singleList4);
+				singleArr.push(singleList4);
+				
+				refresh(0);
+				
+				
+				for(i = 0 ; i<singleArr.length ; i++){
+					(singleArr[i] as ListSingle).addEventListener(MySlideEvent.CHOOSE_BT , onRefreshSlide);
+				}
+				initPicOptions();
+				canvasArea.addEventListener(MouseEvent.CLICK , onStageClick);
+				SizeRotationManager.getInstance().addEventListener(ChoosePictureEvent.PICTURE_TYPE , onPictureType);
+			}
+			
+			public function addBgPic(_viewMapBox:ViewMapBox):void{
+				arr.push(_viewMapBox);
+				_viewMapBox.scaleX = _viewMapBox.scaleY = 150/_viewMapBox.width ;
+				_viewMapBox.addEventListener(MouseEvent.MOUSE_DOWN , onMapMouseDown);
+				singleList.mcArr = arr ;
+				singleList.addMc();
+			}
+			
+			private function onStageClick(e:MouseEvent):void{
+				if(e.target.parent == mySilde){
+					allPictureSp.mask = iphoneMask;
+					iphoneMask.alpha = 1;
+				}
+			}
+			
+			private function onPictureType(e:ChoosePictureEvent):void{
+				if(e.picType == "bg"){
+					allPictureSp.mask = null ; 
+					iphoneMask.alpha = 0.5;
+				}else{
+					allPictureSp.mask = iphoneMask;
+					iphoneMask.alpha = 1;
+				}
+			}
+			
+			private function initPicOptions():void{
+				picutreOption.addEventListener(PicOptionEvent.PICTURE_CHANGE , onOptions);
+			}
+			
+			private function onOptions(e:PicOptionEvent):void{
+				switch(e.state){
+					case "DELETE":
+						var vo:ChooseMapVo = SizeRotationManager.getInstance().getVo() ; 
+						var childIndex:int = vo._childIndex ;
+						var index:int = mapVoArr.indexOf(vo)
+						deletePicFun(vo,childIndex,index);
+						vo._isDelete = true ;
+						OperationsManager.getInstance().addOperation(vo);
+						OperationsManager.getInstance().addOperation(null);
+						break;
+					case "DOWN":
+						vo = SizeRotationManager.getInstance().getVo() ; 
+						childIndex = vo._childIndex ;
+						index = mapVoArr.indexOf(vo)
+						if(vo._childIndex-1>=1){
+							decorationArea.setChildIndex(SizeRotationManager.getInstance().modifySp ,vo._childIndex-1)
+							vo._childIndex -- ; 
+							for(var i:int = 0 ; i <mapVoArr.length ; i++){
+								if(mapVoArr[i]._childIndex ==vo._childIndex && i !=index){
+									mapVoArr[i]._childIndex++ ;
+								}
+							}
+						}
+						break;
+					case "UP":
+						vo = SizeRotationManager.getInstance().getVo() ; 
+						if(vo._picType == "bg"){
+							return ; 
+						}
+						childIndex=vo._childIndex
+						index = mapVoArr.indexOf(vo)
+						if(vo._childIndex+1<decorationArea.numChildren){
+							decorationArea.setChildIndex(SizeRotationManager.getInstance().modifySp ,vo._childIndex+1)
+							vo._childIndex++;
+							for(i = 0 ; i <mapVoArr.length ; i++){
+								if(mapVoArr[i]._childIndex ==vo._childIndex && i !=index){
+									mapVoArr[i]._childIndex-- ;
+								}
+							}
+						}
+						break;
+					
+				}
+			}
+			
+			private function onDeletePic(e:ChoosePictureEvent):void{
+				var vo:ChooseMapVo = e.chooseVo ;
+				var childIndex:int = vo._childIndex ;
+				var index:int = mapVoArr.indexOf(vo);
+				deletePicFun(vo,childIndex,index);
+			}
+			private function deletePicFun(vo:ChooseMapVo,childIndex:int ,index:int):void{
+				picutreOption.visible = false;
+				SizeRotationManager.getInstance().destoryFun();
+				if(vo._picType!="bg"){
+					for(var i:int = 0 ; i <mapVoArr.length ; i++){
+						if(mapVoArr[i]._childIndex >childIndex){
+							mapVoArr[i]._childIndex --
+						}
+					}
+				}else{
+					backGroudPic = null ;
+				}
+				saveMapArr.splice(index,1);
+				mapVoArr.splice(index,1);
+				
+				trace("saveMapArrdelete",saveMapArr)
+			}
+			
+			private function onGetEffect(e:MouseEvent):void{
+				var code:String = e.currentTarget.mapCode;
+				var vo:LomoEffectVo = LomoEffectManager.getInstance().getLomoEffectByCode(code);
+				var bmd:BitmapData = e.currentTarget.mapBitmapData;
+				var tBmd:BitmapData = bmd.clone()
+				tempMiniBmp = new Bitmap(tBmd);
+				tempMiniBmp.smoothing = true ; 
+				AddLomoEffect.getInstance().changeEffect(cloneBgBmp,originalBgBmd,
+					backGroudPic,tempMiniBmp,vo.effectString,250,vo.isBlack);
+				
+			}
+			
+			
+			
+			private function onMapMouseDown(e:MouseEvent):void{
+				if(!canChooseMc){
+					return;
+				}
+				canChooseMc = false;
+				stage.addEventListener(MouseEvent.MOUSE_MOVE , onMiniMapMove);
+				stage.addEventListener(MouseEvent.MOUSE_UP , onMiniMapStop);
+				currentPicType = e.currentTarget.picType;
+				currentPicCode = e.currentTarget.mapCode;
+				currentPicName = e.currentTarget.mapName ; 
+				var bmd:BitmapData = e.currentTarget.mapBitmapData;
+				var tBmd:BitmapData = bmd.clone()
+				tempMiniBmp = new Bitmap(tBmd);
+				tempMiniBmp.smoothing = true ; 
+				if(currentPicType == "bg"){
+					cloneBgBmp = tempMiniBmp ; 
+					originalBgBmd = tempMiniBmp.bitmapData.clone() ; 
+				}
+				chooseMapMc = new MovieClip();
+				chooseMapMc.addChild(tempMiniBmp)
+				chooseMapMc.scaleX = moveScale ;
+				chooseMapMc.scaleY = moveScale ;
+				chooseMapMc.alpha = 0.6 ;
+				mySilde.addChild(chooseMapMc);
+				var p:Point = mySilde.globalToLocal(new Point(mouseX , mouseY));
+				chooseMapMc.x = p.x -chooseMapMc.width*1/moveScale/2;
+				chooseMapMc.y = p.y -chooseMapMc.height*1/moveScale/2;
+//				chooseMapMc.x = mouseX - 100; 
+//				chooseMapMc.y = mouseY - 30;
+//				chooseMapMc.startDrag();
+				mapOriginalPoint = new Point(e.currentTarget.x , e.currentTarget.y);
+//				tempMiniSp.startDrag(true);
+			}
+			
+			private function onMiniMapStop(e:MouseEvent):void{
+//				chooseMapMc.stopDrag();
+				stage.removeEventListener(MouseEvent.MOUSE_MOVE , onMiniMapMove);
+				stage.removeEventListener(MouseEvent.MOUSE_UP , onMiniMapStop);
+				getMiniMapLocal(chooseMapMc);
+			}
+			
+			//换背景
+			private function changeBg():void{
+				trace("backGroudPic" , backGroudPic)
+				if(backGroudPic!=null){
+					if(SizeRotationManager.getInstance().selectedPic == backGroudPic){
+						picutreOption.visible = false;
+						SizeRotationManager.getInstance().destoryFun();
+						var index:int = saveMapArr.indexOf(backGroudPic) ; 
+						var vo:ChooseMapVo = mapVoArr[index]
+						vo._isDelete = true ; 
+						OperationsManager.getInstance().addOperation(vo);
+						OperationsManager.getInstance().addOperation(null);
+						saveMapArr.splice(index , 1);
+						mapVoArr.splice(index , 1);
+					}else{
+						index = saveMapArr.indexOf(backGroudPic) ; 
+						vo = mapVoArr[index] ;
+						vo._isDelete = true ;
+						trace("backGroudPicppp",backGroudPic.parnet)
+						var pic:* = backGroudPic
+						vo.pic = pic;
+						backGroudPic.parent.removeChild(backGroudPic)
+						OperationsManager.getInstance().addOperation(vo);
+						OperationsManager.getInstance().addOperation(null);
+//						backGroudPic.visible = false 
+						saveMapArr.splice(index , 1);
+						mapVoArr.splice(index , 1);
+					}
+				}else if(backGroudPic == null){
+					for(var i:int = 0 ; i <mapVoArr.length ; i++){
+						mapVoArr[i]._childIndex++
+					}
+				}
+				backGroudPic = chooseMapMc ;
+			}
+			
+			private function changeBackPicPos():void{
+				var index:int = saveMapArr.indexOf(backGroudPic) ; 
+				var vo:ChooseMapVo = mapVoArr[index] ; 
+				var picW:int = iphoneMask.width - currentBorderVo.spacingW * 2 ;
+				var picH:int = iphoneMask.height - currentBorderVo.spacingH * 2 ;
+				var toP:Point = new Point();
+				backGroudPic.height /= vo._scale ;
+				backGroudPic.width /= vo._scale ;
+				if(backGroudPic.height <= backGroudPic.width){
+					picInitialScale = (picH) / (backGroudPic.height);
+				}else{
+					picInitialScale = (picW) / (backGroudPic.width);
+				}
+				toP.x  =(backGroudPic.width*picInitialScale)/2 +  iphoneSkin.x - ((backGroudPic.width)*picInitialScale -iphoneSkin.width)/2 ;
+				toP.y = (backGroudPic.height*picInitialScale)/2+ iphoneSkin.y -((backGroudPic.height)*picInitialScale -iphoneSkin.height)/2 ;
+				var w:int = (backGroudPic.width)*picInitialScale/2 ;
+				var h:int = (backGroudPic.height)*picInitialScale/2
+				picMiniScaleNum = Math.sqrt(w*w+h*h);
+				TweenMax.to(backGroudPic , 0.7,{x:toP.x , y:toP.y ,alpha:1, scaleX:picInitialScale, scaleY:picInitialScale, onComplete:setPosSuccess,ease:Strong.easeOut});
+				vo._scale = picInitialScale ;
+				trace("vo._scale ",vo._scale )
+				vo._miniScale = picMiniScaleNum ; 
+				SizeRotationManager.getInstance().changeRectRadius(backGroudPic , picInitialScale) 
+			}
+			
+			
+			private function getMiniMapLocal(mc:DisplayObject):void{
+				var p:Point = canvasArea.globalToLocal(new Point(mouseX , mouseY));
+				var toP:Point = new Point();
+				p = allPictureSp.globalToLocal(new Point(mouseX , mouseY));
+				if(p.x >iphoneSkin.x && p.x<iphoneSkin.width + iphoneSkin.x 
+					&& p.y >iphoneSkin.y && p.y<iphoneSkin.height + iphoneSkin.y ){
+					if(currentPicType == "bg"){
+						changeBg();
+						pictureArea.addChildAt(chooseMapMc , 0);
+//						chooseMapMc.scaleX = 0.5 ;
+//						chooseMapMc.scaleY = 0.5 ;
+						chooseMapMc.x = p.x-chooseMapMc.width*1/moveScale/2  ;
+						chooseMapMc.y = p.y-chooseMapMc.height*1/moveScale/2  ;
+						
+						var picW:int = iphoneMask.width - currentBorderVo.spacingW*2 ;
+						var picH:int = iphoneMask.height - currentBorderVo.spacingH * 2
+						if(chooseMapMc.height <= chooseMapMc.width){
+							picInitialScale = (picH) / (chooseMapMc.height/moveScale);
+						}else{
+							picInitialScale = (picW) / (chooseMapMc.width/moveScale);
+						}
+						toP.x  = iphoneSkin.x - ((chooseMapMc.width/moveScale)*picInitialScale -iphoneSkin.width)/2 ;
+						toP.y = iphoneSkin.y -((chooseMapMc.height/moveScale)*picInitialScale -iphoneSkin.height)/2 ;
+						var w:int = (chooseMapMc.width/moveScale)*picInitialScale/2 ;
+						var h:int = (chooseMapMc.height/moveScale)*picInitialScale/2
+						picMiniScaleNum = Math.sqrt(w*w+h*h)
+					}else{
+						decorationArea.addChild(chooseMapMc);
+						chooseMapMc.x = p.x-chooseMapMc.width/moveScale/2  ;
+						chooseMapMc.y = p.y-chooseMapMc.height/moveScale/2  ;
+						toP.x = p.x-chooseMapMc.width/moveScale/2 ;
+						toP.y = p.y-chooseMapMc.height/moveScale/2 ;
+						picInitialScale = 1 ;
+						w = chooseMapMc.width/moveScale/4;
+						h = chooseMapMc.height/moveScale/4;
+						picMiniScaleNum = Math.sqrt(w*w+h*h);
+					}
+					TweenMax.to(chooseMapMc , 0.7,{x:toP.x , y:toP.y ,alpha:1, scaleX:picInitialScale, scaleY:picInitialScale, onComplete:setPosSuccess,ease:Strong.easeOut});
+				}else{
+					TweenMax.to(chooseMapMc , 0.3 ,	{x:mapOriginalPoint.x,y:mapOriginalPoint.y, alpha:0,onComplete:getErrorPos, ease:Strong.easeIn});
+				}
+			}
+			
+			
+			
+			//地图存放成功
+			private function setPosSuccess():void{
+				canChooseMc = true ;
+				var chooseMapVo:ChooseMapVo = new  ChooseMapVo();
+				chooseMapVo.pic = chooseMapMc;
+				trace("chooseMapMc.h",chooseMapMc.height)
+				chooseMapVo._picType = currentPicType ;
+				chooseMapVo._code = currentPicCode ;
+				chooseMapVo._name = currentPicName ;
+				chooseMapVo._scale = picInitialScale ; 
+				chooseMapVo._miniScale = picMiniScaleNum;
+				var area:Sprite ; 
+				if(currentPicType =="bg"){ 
+					chooseMapVo._childIndex = 0;
+					area = pictureArea
+				}else{
+					chooseMapVo._childIndex = decorationArea.numChildren - 1 ;
+					area = decorationArea
+				}
+				saveMapArr.push(chooseMapMc);
+				mapVoArr.push(chooseMapVo);
+				chooseMapMc.addEventListener(MouseEvent.MOUSE_DOWN , onChooseChange);
+				setNewPicture(chooseMapMc , area);
+			}
+			
+			private function onChooseChange(e:MouseEvent):void{
+				var index:int = saveMapArr.indexOf(e.currentTarget);
+				currentPic = e.currentTarget ; 
+				var area:Sprite
+				trace("(mapVoArr[index] as ChooseMapVo)",(mapVoArr[index] as ChooseMapVo))
+				if((mapVoArr[index] as ChooseMapVo)._picType == "bg"){
+					allPictureSp.mask = null ; 
+					iphoneMask.alpha = 0.5;
+					area = pictureArea ; 
+				}else{
+					allPictureSp.mask = iphoneMask;
+					iphoneMask.alpha = 1;
+					area = decorationArea
+				}
+				SizeRotationManager.getInstance().setPicture(mapVoArr[index] , area);
+				SizeRotationManager.getInstance().dragStart()
+				picutreOption.visible = true;
+				canvasArea.addChild(picutreOption);
+				canvasArea.parent.addChild(canvasArea)
+			}
+			
+			private function setNewPicture(_mc:MovieClip , _area:Sprite):void{
+				var index:int = saveMapArr.indexOf(_mc);
+				currentPic = _mc ; 
+				SizeRotationManager.getInstance().setPicture(mapVoArr[index] , _area);
+				picutreOption.visible = true;
+				canvasArea.addChild(picutreOption);
+				canvasArea.parent.addChild(canvasArea)
+			}
+			
+			private var currentPicPoint:Point = new Point();
+			private function onChangeOptionPos(e:MySlideEvent):void{
+				picutreOption.x = currentPic.x +currentPic.width/2+e.changeX ;
+				picutreOption.y = currentPic.y +e.changeY +10;
+				var vo:ChooseMapVo = SizeRotationManager.getInstance().getVo() ;
+				currentPicPoint.x = vo._x = currentPic.x+e.changeX - currentPic.width/2 ; 
+				currentPicPoint.y = vo._y = currentPic.y+e.changeY - currentPic.height/2;
+				
+				SizeRotationManager.getInstance().bgCanMove = checkBackPC(vo._x ,vo._y);
+			}
+			
+			private function checkBackPC(_x:int= 0  , _y:int = 0):Boolean{
+				var bo1:Boolean;
+				var bo2:Boolean ;
+				if(currentPic.height >= iphoneSkin.height - currentBorderVo.spacingH*2){
+					if(_y+currentBorderVo.spacingH+ currentPic.height >=iphoneSkin.y + iphoneSkin.height
+						&&_y-currentBorderVo.spacingH<= iphoneSkin.y){
+						bo2 = true ; 
+					}else{
+						bo2 = false ;
+					}
+				}else if(currentPic.height< iphoneSkin.height - currentBorderVo.spacingH*2){
+					if(_y+currentBorderVo.spacingH+ currentPic.height <iphoneSkin.y + iphoneSkin.height
+						&&_y-currentBorderVo.spacingH > iphoneSkin.y){
+						bo2 = true ; 
+					}else{
+						bo2 = false ;
+					}
+				}
+				if(currentPic.width >= iphoneSkin.width - currentBorderVo.spacingW*2  ){
+					if(_x+currentBorderVo.spacingW + currentPic.width>=iphoneSkin.x + iphoneSkin.width
+						&&_x-currentBorderVo.spacingW<=iphoneSkin.x){
+						bo1 = true;
+					}else{
+						bo1 = false ;
+					}
+				}else if(currentPic.width < iphoneSkin.width - currentBorderVo.spacingW*2 ){
+					if(_x+currentBorderVo.spacingW + currentPic.width < iphoneSkin.x + iphoneSkin.width
+					&& _x-currentBorderVo.spacingW > iphoneSkin.x){
+						bo1 = true;
+					}else{
+						bo1 = false ;
+					}
+				}
+
+				if(bo1&&bo2){
+					return true ;
+				}else{
+					return false ;
+				}
+			
+				
+			}
+				
+			
+			//底图放置错误位置
+			private function getErrorPos():void{
+				mySilde.removeChild(chooseMapMc);
+				canChooseMc = true ;
+			}
+			
+			private function onMiniMapMove(e:MouseEvent):void{
+				var p:Point = mySilde.globalToLocal(new Point(mouseX , mouseY));
+				chooseMapMc.x = p.x -chooseMapMc.width*1/moveScale/2;
+				chooseMapMc.y = p.y-chooseMapMc.height*1/moveScale/2;
+			}
+			
+			//初始化画板
+			private function initCanvas():void
+			{
+				canvasArea = new Sprite();
+				canvasArea.graphics.beginFill(0x0000000,0.5);
+				canvasArea.graphics.drawRect(0, 0, 1800 , 1000);
+				canvasArea.graphics.endFill();
+//				mySilde.addChild(canvasArea);
+				canvasArea.x = 185;
+				canvasArea.y = 10;
+				
+				var stageMask:Sprite = new Sprite();
+				stageMask.graphics.beginFill(0x0000000,1);
+				stageMask.graphics.drawRect(0, 0, 1800 , 1000);
+				stageMask.graphics.endFill();
+				//				mySilde.addChild(canvasArea);
+				stageMask.x = 185;
+				stageMask.y = 0;
+				mySilde.addChild(stageMask);
+//				canvasSPane = new Scroller();
+//				canvasSPane.width =  1150;
+//				canvasSPane.height = 500;
+//				vGroup = new VGroup();
+//				canvasSPane.viewport = vGroup;
+//				var canvasUIC:UIComponent = new UIComponent();
+//				canvasUIC.addChild(canvasArea);
+				mySilde.addChild(canvasArea);
+				iphoneSkin = new IphoneSkin();
+				iphoneSkin.x = 200 ; 
+				iphoneSkin.y = 150 ;
+				iphoneMask = new IphoneSkin();
+				iphoneMask.x = 200 ;
+				iphoneMask.y = 150 ;
+				iphoneMask.cacheAsBitmap = true; 
+//				canvasArea.mask = iphoneMask ;
+//				pictureArea.cacheAsBitmap = true 
+					
+				canvasArea.cacheAsBitmap = true;
+				stageMask.cacheAsBitmap = true ;
+				canvasArea.mask = stageMask;
+//				cameraEye = new CameraEye();
+//				cameraEye.x = 200 ;
+//				cameraEye.y = 150 ;
+//				mySilde.addChild(canvasSPane);
+//				canvasSPane.x = 200;
+//				canvasUIC.explicitWidth = 1850;
+//				canvasUIC.explicitHeight = 1000;
+				borderArea = new Sprite();
+				pictureArea = new Sprite();
+				decorationArea = new Sprite();
+				allPictureSp = new Sprite();
+				allPictureSp.addChild(pictureArea);
+				allPictureSp.addChild(borderArea);
+				allPictureSp.addChild(decorationArea);
+				borderArea.mouseChildren = false ;
+				borderArea.mouseEnabled = false ;
+				
+				canvasArea.addChild(iphoneSkin);
+				canvasArea.addChild(allPictureSp);
+				canvasArea.addChild(iphoneMask);
+				
+				allPictureSp.mask = iphoneMask ; 
+				allPictureSp.cacheAsBitmap  = true ; 
+				
+				iphoneSkin.mouseChildren = false ;
+				iphoneSkin.mouseEnabled = false ;
+				iphoneMask.mouseChildren = false ;
+				iphoneMask.mouseEnabled = false ;
+//				canvasArea.addChild(cameraEye);
+			}
+			private function onRefreshSlide(e:MySlideEvent):void{
+				var _index:int = singleArr.indexOf(e.target);
+				refresh(_index);
+			}
+			
+			private var totalHeight:int = 0;
+			private var bottomHeight:int =500;
+			
+			//刷新右侧元件栏
+			private function refresh(_index:int):void
+			{
+				for(var i:int = 0 ; i <= _index ; i++){
+					if(i == _index){
+						(singleArr[i] as ListSingle).changeState(true);
+						(singleArr[i] as ListSingle).y = totalHeight ;
+						totalHeight +=(singleArr[i] as ListSingle).height;
+						//						totalHeight += 10;
+					}else{
+						(singleArr[i] as ListSingle).changeState(false);
+						(singleArr[i] as ListSingle).y = totalHeight ;
+						totalHeight +=(singleArr[i] as ListSingle).height;
+					}
+				}
+				totalHeight = 0
+				for(i = singleArr.length - 1 ; i>=_index+1 ; i--){
+					(singleArr[i] as ListSingle).changeState(false);
+					(singleArr[i] as ListSingle).y = bottomHeight - (singleArr[i] as ListSingle).height ;
+					bottomHeight -=(singleArr[i] as ListSingle).height;
+				}
+				var length:int 
+				if(_index < singleArr.length - 1){
+					length=(singleArr[_index +1] as ListSingle).y -  (singleArr[_index] as ListSingle).y- 40;
+				}else{
+					length = 500 -  (singleArr[_index] as ListSingle).y -40;
+				}
+				(singleArr[_index] as ListSingle).setSPaneHeight(length);
+				bottomHeight = 500 ; 
+
+			}
+			
+			protected function onFinishScale(e:MySlideEvent):void
+			{
+				if(!checkBackPC(currentPicPoint.x,currentPicPoint.y)){
+					SizeRotationManager.getInstance().setToInit()
+				}
+			}
+			
+			private function initUi():void
+			{
+				btn_Revoke = new btnRevoke();
+				mySilde.addChild(btn_Revoke);
+				btn_Revoke.x = 50;
+				btn_Revoke.y = 550 ;
+				btn_Revoke.addEventListener(MouseEvent.CLICK , onRevoke);
+				btn_Redo = new btnRedo();
+				mySilde.addChild(btn_Redo);
+				btn_Redo.x = 100;
+				btn_Redo.y = 550 ;
+				btn_Redo.addEventListener(MouseEvent.CLICK , onRedo);
+			}
+			
+			
+			protected function onRevoke(event:MouseEvent):void
+			{
+				var vo:ChooseMapVo = OperationsManager.getInstance().revokeOperation();
+				if(vo==null){
+					return ;
+				}
+				SizeRotationManager.getInstance().setOperationVo(vo , pictureArea);
+				canvasArea.parent.addChild(canvasArea)
+			}
+			
+			protected function onRedo(event:MouseEvent):void
+			{
+				var vo:ChooseMapVo = OperationsManager.getInstance().redoOperation();
+				if(vo==null){
+					return ;
+				}
+				SizeRotationManager.getInstance().setOperationVo(vo, pictureArea);
+				canvasArea.parent.addChild(canvasArea)
+			}
+			
+			protected function onGetDeletePic(event:ChoosePictureEvent):void
+			{
+				picutreOption.visible = true;
+				var vo:ChooseMapVo = event.chooseVo
+				if(vo._picType!="bg"){
+					for(var i:int = 0 ; i <mapVoArr.length ; i++){
+						if(mapVoArr[i]._childIndex >=vo._childIndex){
+							mapVoArr[i]._childIndex ++
+						}
+					}
+				}else{
+					backGroudPic = vo.pic ;
+				}
+				saveMapArr.push(vo.pic)
+				mapVoArr.push(vo);
+				vo._isDelete = false ;
+				trace("saveMapArrpush",saveMapArr)
+			}
+			
+			private var borderWidth:int ; 
+			
+			private var borderHeight:int ; 
+			//添加边框
+			protected function onChooseBorder(event:MouseEvent):void
+			{
+				var code:String = event.currentTarget.mapCode;
+				var bVo:BorderVo = BorderManager.getInstance().getBorderByCode(code);
+				currentBorderVo = bVo ; 
+				var mc:Sprite = ProgressLoading.getInstance().getMc(bVo.swfUrl,bVo.resClass);
+				for(var i:int = borderArea.numChildren - 1 ; i >=0 ; i--){
+					var sp:DisplayObject = 	borderArea.getChildAt(i);
+					borderArea.removeChild(sp);
+					if(backGroudPic!=null){
+						changeBackPicPos();
+					}
+				}
+				borderArea.addChild(mc);
+				mc.x = 200 ;
+				mc.y = 150 ;
+			}
+			
+			
+			private var picByteArr:ByteArray ;
+			public function savePhoto():void{
+				SizeRotationManager.getInstance().hideEditorFrame();
+				picutreOption.visible = false ;
+				var bitmapdata:BitmapData = new BitmapData(500 , 500 , true  , 0xffffff00);
+				bitmapdata.draw(pictureArea,new Matrix(1,0,0,1,-200,-150));
+				bitmapdata.draw(borderArea,new Matrix(1,0,0,1,-200,-150));
+				bitmapdata.draw(decorationArea,new Matrix(1,0,0,1,-200,-150));
+				var jpg:JPEGEncoder = new JPEGEncoder(100);
+//				jpg.addEventListener(Event.COMPLETE , onTurnComplete);
+//				jpg.addEventListener(ProgressEvent.PROGRESS, onEncodingProgress);
+				picByteArr = jpg.encode(bitmapdata) ;
+				if(picByteArr){
+					var file:FileReference =new FileReference(); 
+					file.save(picByteArr,"pic" + ".jpg");
+				}
+				SizeRotationManager.getInstance().displayEditorFrame() ;
+				picutreOption.visible = true ; 
+			}
+			
+			private var tempSaveBt:Sprite = new Sprite();
+			protected function onTurnComplete(event:Event):void
+			{
+				tempSaveBt.graphics.beginFill(0xffff00,1);
+				tempSaveBt.graphics.drawCircle(100,100,20);
+				tempSaveBt.addEventListener(MouseEvent.CLICK , onSaveClick);
+				allPictureSp.addChild(tempSaveBt);
+				function onSaveClick(e:MouseEvent):void
+				{
+					if(picByteArr){
+						var file:FileReference =new FileReference();
+						
+						file.save(picByteArr,"pic" + ".jpg");
+					}
+					SizeRotationManager.getInstance().displayEditorFrame() ;
+					picutreOption.visible = true ; 
+				}
+				
+			}
+			
+			protected function onEncodingProgress(e:ProgressEvent):void
+			{
+				trace('ENCODING PROGRESS: ' + Math.round(e.bytesLoaded/e.bytesTotal * 100) + '%') ; 
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<mx:UIComponent id="mySilde"/>
+</s:Group>

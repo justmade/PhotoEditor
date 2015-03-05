@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="180" height="{myHeight}" >
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			
+			import myui.event.MySlideEvent;
+			
+			import spark.components.Scroller;
+			import spark.components.VGroup;
+			
+			import ui.SlideList;
+			[Bindable]
+			private var myHeight:int
+			private var btSkin:SlideList ; 
+			private var imgArea:Sprite ; 
+			public var mcArr:Array ;
+			private var totalHeight:int = 10;
+			public var displayState:Boolean ;
+			private var imgComponent:UIComponent;
+			private var sPane:Scroller ; 
+			private var vGroup:VGroup ;
+			
+			public function init():void
+			{
+				initUi();
+				initMcArr();
+			}
+			private function initUi():void{
+				btSkin = new SlideList();
+				myList.addChild(btSkin);
+				//			totalHeight += btSkin.height;
+				imgArea = new Sprite();
+//				myList.addChild(imgArea);
+				imgArea.x = 0 ;
+				imgArea.y = 0 ;
+				imgComponent = new UIComponent();
+				sPane = new Scroller();
+				sPane.width = 190 ; 
+				sPane.height = 500 ;
+				sPane.y = btSkin.height ;
+				vGroup = new VGroup();
+				btSkin.addEventListener(MouseEvent.CLICK , onChooseList);
+			}
+			
+			private function initMcArr():void
+			{
+				for(var i:int = 0 ; i < mcArr.length ; i++){
+					mcArr[i].x = (180 - mcArr[i].width)/2 ;
+					mcArr[i].y = totalHeight ; 
+					totalHeight += mcArr[i].height + 10 ;
+					imgArea.addChild(mcArr[i]);
+					imgComponent.addChild(imgArea);
+					imgComponent.explicitHeight = totalHeight ;
+				}
+					vGroup.addElement(imgComponent);
+					sPane.viewport = vGroup ; 
+					myList.addChild(sPane);
+					myHeight = totalHeight +btSkin.height;
+			}
+			
+			
+			public function addMc():void{
+				var i:int = mcArr.length - 1 ; 
+				mcArr[i].x = (180 - mcArr[i].width)/2 ;
+				mcArr[i].y = totalHeight ; 
+				totalHeight += mcArr[i].height + 10 ;
+				imgArea.addChild(mcArr[i]);
+				imgComponent.addChild(imgArea);
+				imgComponent.explicitHeight = totalHeight ;
+				myHeight = totalHeight +btSkin.height;
+				
+			}
+			
+			public function changeState(_displayState:Boolean):void{
+				if(displayState != _displayState){ 
+					if(_displayState){
+						imgComponent.explicitHeight = totalHeight;
+						imgComponent.addChild(imgArea);
+						vGroup.addElement(imgComponent);
+						myList.addChild(sPane);
+						sPane.viewport = vGroup
+						myHeight = totalHeight +btSkin.height;
+						imgComponent.explicitHeight = totalHeight;
+					}else{
+						sPane.viewport = null ; 
+						imgComponent.explicitHeight = 0;
+						imgComponent.removeChild(imgArea);
+						vGroup.removeElement(imgComponent);
+						myList.removeChild(sPane);
+						sPane.height = 0 ;
+						myHeight = btSkin.height;
+					}
+					displayState = _displayState;
+				}
+			}
+			
+			public function setSPaneHeight(_num:int):void
+			{
+				sPane.height = _num ;
+			}
+			
+			private function onChooseList(e:MouseEvent):void
+			{
+				this.dispatchEvent(new MySlideEvent(MySlideEvent.CHOOSE_BT));
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<mx:UIComponent id="myList"/>
+</s:Group>

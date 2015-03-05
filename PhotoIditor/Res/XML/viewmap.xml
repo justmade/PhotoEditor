@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no"?>
+
+<Data>
+<mapView name="海底沉船"  code="cMap"  className="cMap"  picType="bg"/>
+<mapView name="海底熔岩"  code="yMap"  className="yMap"   picType="bg"/>
+<mapView name="海底遗骨"  code="jMap"  className="jMap"   picType="bg"/>
+<mapView name="海底遗骨"  code="bMap"  className="bMap"   picType="bg"/>
+<mapView name="海底遗骨"  code="nMap"  className="nMap"   picType="bg"/>
+<mapView name="海底遗骨"  code="iMap"  className="iMap"   picType="bg"/>
+</Data>

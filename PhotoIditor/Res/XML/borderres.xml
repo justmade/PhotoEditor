@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Data>
+	<Border name="礼盒" code="b0"  className="b0" picType="border" swf="giftBorder" spacingW="23" spacingH="23" type="jiandan" resClass="ui.BorderMc"/>
+	<Border name="黑细" code="b1"  className="b1" picType="border" swf="blackBorder" spacingW="2" spacingH="2" type="jiandan" resClass="ui.BorderMc"/>
+	<Border name="精品" code="b2"  className="b2" picType="border" swf="yellowBorder" spacingW="44" spacingH="44" type="jiandan" resClass="ui.BorderMc"/>
+</Data>

@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   xmlns:myslidelist="myui.myslidelist.*"
+			   minWidth="2000" minHeight="600" creationComplete="init(event)" height="1000" width="1200">
+	<fx:Script>
+		<![CDATA[
+			import core.savexmlmodule.LoadSavedXml;
+			import core.savexmlmodule.SaveXml;
+			
+			import datamodule.MainData;
+			
+			import loadmodule.LoadMenuXml;
+			import loadmodule.LoadModuleEvent;
+			import loadmodule.MyLoaderModuleEvent;
+			import loadmodule.MySwfLoad;
+			import loadmodule.UpLoadPicture;
+			
+			import mx.events.FlexEvent;
+			import mx.events.MenuEvent;
+			
+			import myui.myslidelist.MySildeListGroup;
+			
+			private var menuXml:XML ; 
+			
+			private var myS:MySildeListGroup ; 
+			
+			private var upload:UpLoadPicture ;
+			protected function init(event:FlexEvent):void
+			{
+				this.addEventListener(Event.ADDED_TO_STAGE , onStage);
+				var swfLoad:MySwfLoad =new MySwfLoad();
+				swfLoad.addEventListener(LoadModuleEvent.LOADING_MODULE_COMPLETE , onLoadComplete);
+			}
+			
+			private function onStage(e:Event):void{
+				stage.scaleMode = StageScaleMode.NO_SCALE
+			}
+			
+			private function onLoadComplete(e:LoadModuleEvent):void{
+				var myXmlLoader:LoadMenuXml = new LoadMenuXml();
+				myXmlLoader.loadFun();
+				myXmlLoader.addEventListener(MyLoaderModuleEvent.XMLLOADCOMPELTE , onXmlLoadComplete);
+				myS = new MySildeListGroup();
+				this.addElement(myS);
+				myS.y = 50;
+			}
+			
+			private function onXmlLoadComplete(e:MyLoaderModuleEvent):void{
+				menuXml =MainData.getInstance().menuXML ; 
+				mainMenu.dataProvider = menuXml.MenuList ; 
+			}
+			
+			protected function mainMenu_itemClickHandler(event:MenuEvent):void
+			{
+				switch(event.label){
+					case "保存":
+						var saveXml:SaveXml = new SaveXml(myS.mapVoArr);
+						break;
+					case "开打":
+						var loadXml:LoadSavedXml = new LoadSavedXml();
+						break;
+					case "上传图片":
+						upload = new UpLoadPicture();
+						upload.addEventListener("UpLoadPicComplete" , onUpLoadComplete);
+						break;
+					case "截图":
+						myS.savePhoto(); 
+						break ;
+				}
+			}
+			
+			private function onUpLoadComplete(e:Event):void{
+				myS.addBgPic(upload.getPic());
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<mx:MenuBar x="37" y="26" id="mainMenu" labelField="@label"
+				itemClick="mainMenu_itemClickHandler(event)"
+				showRoot="false" ></mx:MenuBar>
+</s:Application>
